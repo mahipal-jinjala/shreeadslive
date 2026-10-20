@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { QRCodeSVG } from "qrcode.react";
 import {
@@ -37,6 +37,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { signInWithMobile } from "@/lib/portal.functions";
 import { createCourseSlug, formatRupees, readPortalSession, type PortalSession } from "@/lib/portal-session";
 import { createUpiPaymentUri, PORTAL_UPI_ID } from "@/lib/payment";
+import studioImage from "@/assets/shree-learning-studio.jpg";
 
 type Course = {
   id: string;
@@ -61,8 +62,6 @@ type PaymentRequest = {
   admin_note: string | null;
   created_at: string;
 };
-
-const studioImage = "/images/shree-learning-studio.jpg";
 
 function Wordmark({ light = false }: { light?: boolean }) {
   return (
@@ -233,9 +232,9 @@ export function AuthPage() {
   const [notice, setNotice] = useState("");
   const [signInMethod, setSignInMethod] = useState<"email" | "mobile">("email");
   const [form, setForm] = useState({ fullName: "", email: "", mobile: "", password: "" });
-  const update = (key: keyof typeof form) => (event: React.ChangeEvent<HTMLInputElement>) => setForm((value) => ({ ...value, [key]: event.target.value }));
+  const update = (key: keyof typeof form) => (event: ChangeEvent<HTMLInputElement>) => setForm((value) => ({ ...value, [key]: event.target.value }));
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setNotice("");
     try {
       if (mode === "signup") {
@@ -306,7 +305,7 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold ${style}`}><span className="size-1.5 rounded-full bg-current" />{label}</span>;
 }
 
-function DashboardFrame({ session, active, onSelect, children, admin = false }: { session: PortalSession; active: string; onSelect: (tab: string) => void; children: React.ReactNode; admin?: boolean }) {
+function DashboardFrame({ session, active, onSelect, children, admin = false }: { session: PortalSession; active: string; onSelect: (tab: string) => void; children: ReactNode; admin?: boolean }) {
   const navigate = useNavigate();
   const items = admin
     ? [{ id: "overview", label: "Overview", icon: LayoutDashboard }, { id: "courses", label: "Courses", icon: BookOpen }, { id: "payments", label: "Payment requests", icon: WalletCards }, { id: "students", label: "Students", icon: Users }, { id: "settings", label: "Settings", icon: ShieldCheck }]
@@ -368,7 +367,7 @@ export function StudentDashboard() {
     return () => { live = false; };
   }, [session?.id, session?.role, sessionLoading, navigate]);
 
-  async function saveProfile(event: React.FormEvent<HTMLFormElement>) {
+  async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!session) return; setBusy(true); setError("");
     const { error: updateError } = await supabase.from("profiles").update({ full_name: profile.full_name.trim(), mobile: profile.mobile.trim() || null }).eq("id", session.id);
     setBusy(false);
@@ -421,7 +420,7 @@ export function CoursePage({ slug }: { slug: string }) {
     return () => { live = false; };
   }, [slug, session?.id]);
 
-  async function submitPayment(event: React.FormEvent<HTMLFormElement>) {
+  async function submitPayment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!course) return;
     if (!session) { await navigate({ to: "/auth" }); return; }
     if (!proof) { toast.error("Choose a payment screenshot first."); return; }
@@ -500,7 +499,7 @@ export function AdminDashboard() {
 
   function resetCourseForm() { setCourseForm({ title: "", slug: "", description: "", price: "", is_active: false, is_featured: false }); setThumb(null); setEditing(null); }
   function editCourse(course: Course) { setEditing(course.id); setCourseForm({ title: course.title, slug: course.slug, description: course.description, price: String(course.price), is_active: course.is_active, is_featured: course.is_featured }); setTab("courses"); }
-  async function saveCourse(event: React.FormEvent<HTMLFormElement>) {
+  async function saveCourse(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError("");
     let thumbnail_path = courses.find((item) => item.id === editing)?.thumbnail_path ?? null;
     const slug = createCourseSlug(courseForm.slug || courseForm.title);
