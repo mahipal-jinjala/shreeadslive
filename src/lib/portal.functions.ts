@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 export const signInWithMobile = createServerFn({ method: "POST" })
@@ -9,7 +10,12 @@ export const signInWithMobile = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseUrl = process.env["SUPABASE_URL"];
+    const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
+    if (!supabaseUrl || !publishableKey) throw new Error("Sign-in is temporarily unavailable.");
+    const supabasePublic = createClient(supabaseUrl, publishableKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("email")
