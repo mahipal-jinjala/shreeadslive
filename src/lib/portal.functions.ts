@@ -10,12 +10,7 @@ export const signInWithMobile = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const supabaseUrl = process.env["SUPABASE_URL"];
-    const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
-    if (!supabaseUrl || !publishableKey) throw new Error("Sign-in is temporarily unavailable.");
-    const supabasePublic = createClient(supabaseUrl, publishableKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("email")
