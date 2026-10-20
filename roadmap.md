@@ -1,0 +1,5 @@
+- [ ] Enable Lovable Cloud and configure secure authentication.
+- [ ] Create database schema, access policies, and private media storage.
+- [ ] Build public catalog, course detail, student area, and admin workspace.
+- [ ] Complete UPI proof submission, review, and course access flow.
+- [ ] Verify app behavior and report any owner-only setup steps.
