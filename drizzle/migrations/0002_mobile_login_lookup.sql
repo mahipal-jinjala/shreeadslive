@@ -1,0 +1,2 @@
+create unique index profiles_mobile_unique_idx on public.profiles (mobile) where mobile is not null;
+create policy "Admins can read all course thumbnails" on storage.objects for select to authenticated using (bucket_id = 'course-thumbnails' and public.has_role(auth.uid(), 'admin'));

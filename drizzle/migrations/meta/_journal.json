@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792502656353,
+      "tag": "0000_create_shree_ads_course_portal",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792502793610,
+      "tag": "0001_restrict_student_profile_updates",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792503048439,
+      "tag": "0002_mobile_login_lookup",
+      "breakpoints": true
+    }
+  ]
+}
