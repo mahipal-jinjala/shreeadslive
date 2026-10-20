@@ -8,6 +8,13 @@
       "when": 1792502656353,
       "tag": "0000_create_shree_ads_course_portal",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792502793610,
+      "tag": "0001_restrict_student_profile_updates",
+      "breakpoints": true
     }
   ]
 }
