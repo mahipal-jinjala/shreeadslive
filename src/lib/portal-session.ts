@@ -15,10 +15,11 @@ export async function readPortalSession(): Promise<PortalSession | null> {
   if (authError || !authData.user) return null;
 
   const user = authData.user;
-  const [{ data: profile }, { data: roles }] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: roles, error: roleError }] = await Promise.all([
     supabase.from("profiles").select("full_name,email,mobile").eq("id", user.id).maybeSingle(),
     supabase.from("user_roles").select("role").eq("user_id", user.id),
   ]);
+  if (profileError || roleError) throw new Error("Your account could not be loaded. Please try again.");
 
   const role = roles?.some((item) => item.role === "admin") ? "admin" : "student";
   return {
