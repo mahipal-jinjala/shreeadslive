@@ -1,7 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { StudentDashboard } from "@/components/portal";
+import { readPortalSession } from "@/lib/portal-session";
 
 export const Route = createFileRoute("/_authenticated/student/dashboard")({
+  beforeLoad: async () => {
+    const session = await readPortalSession();
+    if (session?.role === "admin") throw redirect({ to: "/admin/dashboard" });
+  },
   head: () => ({ meta: [
     { title: "My learning | SHREE ADS" },
     { name: "description", content: "Manage SHREE ADS courses, payments, and student profile." },
