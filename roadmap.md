@@ -1,5 +1,7 @@
 - [x] Enable Lovable Cloud and configure secure authentication.
 - [x] Create database schema, access policies, and private media storage.
-- [ ] Build public catalog, course detail, student area, and admin workspace.
-- [ ] Complete UPI proof submission, review, and course access flow.
-- [ ] Verify app behavior and report any owner-only setup steps.
+- [ ] Fix current portal/session errors and verify running pages.
+- [ ] Finish protected admin/student login and role redirects, preserving /admin.
+- [ ] Finish multiple courses, separate pricing, videos, UPI proof, and WhatsApp follow-up.
+- [ ] Harden and test approval-only access, database RLS, authentication, and private storage.
+- [ ] Test affected pages and full payment/review flows; report unverified or blocked items.
