@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AdminDashboard } from "@/components/portal";
 
-export const Route = createFileRoute("/admin/dashboard")({
+export const Route = createFileRoute("/_authenticated/admin/dashboard")({
   head: () => ({ meta: [
     { title: "Admin dashboard | SHREE ADS" },
     { name: "description", content: "Manage SHREE ADS courses, students, and payment requests." },

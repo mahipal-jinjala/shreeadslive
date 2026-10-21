@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { StudentDashboard } from "@/components/portal";
 
-export const Route = createFileRoute("/student/dashboard")({
+export const Route = createFileRoute("/_authenticated/student/dashboard")({
   head: () => ({ meta: [
     { title: "My learning | SHREE ADS" },
     { name: "description", content: "Manage SHREE ADS courses, payments, and student profile." },

@@ -1,0 +1,18 @@
+import { describe, expect, it } from "vitest";
+import { dashboardForRole, normalizeMobile, validatePaymentProof } from "@/lib/portal-rules";
+import { toYouTubeEmbed } from "@/lib/video";
+
+describe("Portal account and payment rules", () => {
+  it("redirects admins to their protected dashboard", () => { expect(dashboardForRole("admin")).toBe("/admin/dashboard"); });
+  it("redirects students to their learning dashboard", () => { expect(dashboardForRole("student")).toBe("/student/dashboard"); });
+  it("matches Indian mobile numbers regardless of formatting", () => { expect(normalizeMobile("+91 98765 43210")).toBe("9876543210"); });
+  it("accepts proofs up to 10 MB but rejects larger files", () => {
+    expect(() => validatePaymentProof({ type: "image/png", size: 10485760 })).not.toThrow();
+    expect(() => validatePaymentProof({ type: "image/png", size: 10485761 })).toThrow();
+  });
+  it("rejects executable proof uploads", () => { expect(() => validatePaymentProof({ type: "text/html", size: 1024 })).toThrow(); });
+  it("embeds valid YouTube videos and rejects unrelated hosts", () => {
+    expect(toYouTubeEmbed("https://youtu.be/dQw4w9WgXcQ")).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
+    expect(() => toYouTubeEmbed("https://evil.example/watch?v=dQw4w9WgXcQ")).toThrow();
+  });
+});
