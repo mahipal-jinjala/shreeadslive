@@ -141,7 +141,7 @@ async function courseThumbnail(path: string | null): Promise<string | null> {
   return error ? null : data.signedUrl;
 }
 
-function CourseCard({ course, image }: { course: Course; image?: string | null }) {
+function CourseCard({ course, image }: { course: Course; image?: string | null | undefined }) {
   return <article className="group min-w-0 border border-border bg-card">
     <Link to="/course/$slug" params={{ slug: course.slug }} className="block overflow-hidden">
       <div className="relative aspect-[1.65] overflow-hidden bg-secondary">
