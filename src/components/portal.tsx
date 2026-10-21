@@ -38,6 +38,7 @@ import { signInWithMobile } from "@/lib/portal.functions";
 import { createCourseSlug, formatRupees, readPortalSession, type PortalSession } from "@/lib/portal-session";
 import { createUpiPaymentUri, PORTAL_UPI_ID } from "@/lib/payment";
 import studioImage from "@/assets/shree-learning-studio.jpg";
+import { toYouTubeEmbed } from "@/lib/video";
 
 type Course = {
   id: string;
@@ -140,7 +141,7 @@ async function courseThumbnail(path: string | null): Promise<string | null> {
   return error ? null : data.signedUrl;
 }
 
-function CourseCard({ course, image }: { course: Course; image?: string | null }) {
+function CourseCard({ course, image }: { course: Course; image?: string | null | undefined }) {
   return <article className="group min-w-0 border border-border bg-card">
     <Link to="/course/$slug" params={{ slug: course.slug }} className="block overflow-hidden">
       <div className="relative aspect-[1.65] overflow-hidden bg-secondary">
@@ -524,7 +525,7 @@ export function AdminDashboard() {
   async function reviewPayment(payment: PaymentRequest, status: "approved" | "rejected") {
     if (status === "rejected" && !noteById[payment.id]?.trim()) { toast.error("Add a note so the student knows what to correct."); return; }
     setBusy(true);
-    const { error: reviewError } = await supabase.from("payment_requests").update({ status, admin_note: status === "rejected" ? noteById[payment.id].trim() : null, reviewed_at: new Date().toISOString() }).eq("id", payment.id);
+    const { error: reviewError } = await supabase.from("payment_requests").update({ status, admin_note: status === "rejected" ? noteById[payment.id]?.trim() ?? null : null, reviewed_at: new Date().toISOString() }).eq("id", payment.id);
     setBusy(false);
     if (reviewError) toast.error(reviewError.message); else { toast.success(status === "approved" ? "Payment approved; course access granted." : "Payment rejected with a student note."); await refresh(); }
   }
