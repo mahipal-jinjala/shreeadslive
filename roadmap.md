@@ -5,3 +5,4 @@
 - [ ] Finish multiple courses, separate pricing, videos, UPI proof, and WhatsApp follow-up.
 - [ ] Harden and test approval-only access, database RLS, authentication, and private storage.
 - [ ] Test affected pages and full payment/review flows; report unverified or blocked items.
+- [x] Add course-specific and payment-record WhatsApp contact links with prefilled details.
