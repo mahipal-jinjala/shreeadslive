@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   createCourseWhatsAppUri,
   createPaymentWhatsAppUri,
+  createPortalWhatsAppUri,
+  PORTAL_WHATSAPP_GREETING,
   createUpiPaymentUri,
   PORTAL_UPI_ID,
   PORTAL_WHATSAPP_NUMBER,
@@ -21,6 +23,12 @@ describe("SHREE ADS UPI payment details", () => {
 });
 
 describe("SHREE ADS WhatsApp contact details", () => {
+  it("creates the fixed portal contact link with the editable Gujarati greeting", () => {
+    const uri = new URL(createPortalWhatsAppUri());
+    expect(uri.pathname).toBe(`/${PORTAL_WHATSAPP_NUMBER}`);
+    expect(uri.searchParams.get("text")).toBe(PORTAL_WHATSAPP_GREETING);
+  });
+
   it("prefills course name, price, and optional student name", () => {
     const uri = new URL(createCourseWhatsAppUri("Creator Basics", 1499, "Asha Patel"));
 
@@ -34,6 +42,8 @@ describe("SHREE ADS WhatsApp contact details", () => {
   it("prefills the relevant payment record without exposing screenshot links", () => {
     const uri = new URL(createPaymentWhatsAppUri({
       studentName: "Asha Patel",
+      mobile: "9876543210",
+      email: "asha@example.com",
       courseTitle: "Creator Basics",
       amount: 1499,
       utrNumber: "TXN123456",
@@ -43,6 +53,8 @@ describe("SHREE ADS WhatsApp contact details", () => {
 
     expect(uri.pathname).toBe(`/${PORTAL_WHATSAPP_NUMBER}`);
     expect(message).toContain("Course: Creator Basics");
+    expect(message).toContain("Mobile: 9876543210");
+    expect(message).toContain("Email: asha@example.com");
     expect(message).toContain("Amount: ₹1499.00");
     expect(message).toContain("UTR: TXN123456");
     expect(message).toContain("Status: pending");

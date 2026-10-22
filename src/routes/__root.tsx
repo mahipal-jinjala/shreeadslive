@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
 import { PortalAuthProvider } from "@/components/portal-auth";
+import { FloatingWhatsAppButton } from "@/components/portal";
 
 function NotFoundComponent() {
   return (
@@ -126,6 +127,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <PortalAuthProvider><Outlet /></PortalAuthProvider>
+      <FloatingWhatsAppButton />
       <Toaster />
     </QueryClientProvider>
   );

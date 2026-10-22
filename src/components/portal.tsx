@@ -41,9 +41,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { signInWithMobile } from "@/lib/portal.functions";
 import { createCourseSlug, formatRupees, readPortalSession, type PortalSession } from "@/lib/portal-session";
-import { createCourseWhatsAppUri, createPaymentWhatsAppUri, createUpiPaymentUri, PORTAL_UPI_ID } from "@/lib/payment";
+import { createCourseWhatsAppUri, createPaymentWhatsAppUri, createUpiPaymentUri, PORTAL_UPI_ID, createPortalWhatsAppUri } from "@/lib/payment";
 import studioImage from "@/assets/shree-learning-studio.jpg";
-import { toYouTubeEmbed } from "@/lib/video";
+import { toDirectVideoUrl, toYouTubeEmbed } from "@/lib/video";
 
 type Course = {
   id: string;
@@ -112,6 +112,19 @@ export function PortalHeader({ session }: { session?: PortalSession | null }) {
       </nav>}
     </header>
   );
+}
+
+export function FloatingWhatsAppButton() {
+  return <a
+    href={createPortalWhatsAppUri()}
+    target="_blank"
+    rel="noreferrer"
+    aria-label="Chat with SHREE ADS on WhatsApp"
+    className="fixed bottom-4 left-4 z-50 inline-flex min-h-12 items-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-bold text-whatsapp-foreground shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-whatsapp focus-visible:ring-offset-2 sm:bottom-5 sm:left-5"
+  >
+    <MessageCircle className="size-5" aria-hidden="true" />
+    <span className="hidden sm:inline">WhatsApp us</span>
+  </a>;
 }
 
 function SiteFooter() {
@@ -306,7 +319,16 @@ function DashboardFrame({ session, active, onSelect, children, admin = false }: 
   const items = admin
     ? [{ id: "overview", label: "Overview", icon: LayoutDashboard }, { id: "courses", label: "Courses", icon: BookOpen }, { id: "videos", label: "Manage videos", icon: FileVideo2 }, { id: "payments", label: "Payment requests", icon: WalletCards }, { id: "students", label: "Students", icon: Users }, { id: "settings", label: "Settings", icon: ShieldCheck }]
     : [{ id: "overview", label: "Overview", icon: LayoutDashboard }, { id: "my-courses", label: "My courses", icon: BookOpen }, { id: "payments", label: "Payment history", icon: CreditCard }, { id: "profile", label: "My profile", icon: Users }];
-  async function signOut() { await queryClient.cancelQueries(); queryClient.clear(); await supabase.auth.signOut(); await navigate({ to: "/auth", replace: true }); }
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Could not sign out. Please try again.");
+      return;
+    }
+    await navigate({ to: "/auth", replace: true });
+  }
   return <div className="portal-shell flex min-h-screen bg-background">
     <aside className="hidden w-[250px] shrink-0 flex-col bg-panel text-panel-foreground md:flex">
       <div className="p-6"><Wordmark light /></div>
@@ -318,7 +340,7 @@ function DashboardFrame({ session, active, onSelect, children, admin = false }: 
       <header className="sticky top-0 z-10 flex min-h-[4.1rem] items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur sm:px-7">
         <div className="flex items-center gap-3 md:hidden"><Wordmark /><span className="text-xs text-muted-foreground">/</span><span className="text-xs font-semibold">{admin ? "Admin" : "Student"}</span></div>
         <div className="hidden text-sm text-muted-foreground md:block">{admin ? "SHREE ADS / ADMIN" : "SHREE ADS / MY LEARNING"}</div>
-        <div className="flex items-center gap-3"><span className="hidden max-w-48 truncate text-sm text-muted-foreground sm:inline">{session.fullName || session.email}</span><div className="grid size-8 place-items-center bg-brand-soft text-xs font-bold text-brand">{(session.fullName || session.email).slice(0, 1).toUpperCase()}</div></div>
+        <div className="flex items-center gap-3"><span className="hidden max-w-48 truncate text-sm text-muted-foreground sm:inline">{session.fullName || session.email}</span><Button variant="outline" size="sm" type="button" onClick={() => void signOut()} className="hidden rounded-none sm:inline-flex"><LogOut />Log out</Button><div className="grid size-8 place-items-center bg-brand-soft text-xs font-bold text-brand">{(session.fullName || session.email).slice(0, 1).toUpperCase()}</div></div>
       </header>
       <div className="border-b border-border bg-background px-3 py-2 md:hidden"><div className="flex gap-1 overflow-x-auto">{items.map(({ id, label, icon: Icon }) => <Button variant="ghost" key={id} type="button" onClick={() => onSelect(id)} className={`flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs font-semibold ${active === id ? "bg-panel text-panel-foreground" : "text-muted-foreground"}`}><Icon className="size-3.5" />{label}</Button>)}<Button variant="ghost" type="button" onClick={() => void signOut()} className="flex shrink-0 items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground"><LogOut className="size-3.5" />Sign out</Button></div></div>
       <div className="mx-auto w-full max-w-[1200px] p-4 sm:p-7 lg:p-10">{children}</div>
@@ -385,7 +407,7 @@ export function StudentDashboard() {
 }
 
 export function CoursePage({ slug }: { slug: string }) {
-  const navigate = useNavigate();
+  const mobileSignIn = useServerFn(signInWithMobile);
   const { session, loading: sessionLoading } = useSessionState();
   const [course, setCourse] = useState<Course | null>(null);
   const [videos, setVideos] = useState<Array<{ id: string; title: string; description: string; video_url: string; source_type: string }>>([]);
@@ -395,6 +417,10 @@ export function CoursePage({ slug }: { slug: string }) {
   const [paying, setPaying] = useState(false);
   const [utr, setUtr] = useState("");
   const [proof, setProof] = useState<File | null>(null);
+  const [studentName, setStudentName] = useState("");
+  const [studentMobile, setStudentMobile] = useState("");
+  const [studentEmail, setStudentEmail] = useState("");
+  const [studentPassword, setStudentPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
@@ -422,18 +448,70 @@ export function CoursePage({ slug }: { slug: string }) {
 
   async function submitPayment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!course) return;
-    if (!session) { await navigate({ to: "/auth" }); return; }
     if (!proof) { toast.error("Choose a payment screenshot first."); return; }
     try { validatePaymentProof(proof); } catch (e) { toast.error(e instanceof Error ? e.message : "Invalid screenshot."); return; }
+    let activeSession = session;
     setPaying(true);
+    try {
+      if (!activeSession) {
+        const mobile = normalizeMobile(studentMobile);
+        if (!studentName.trim() || mobile.length < 10 || !studentPassword) {
+          throw new Error("Enter your full name, valid mobile number, and password before submitting.");
+        }
+        const authEmail = studentEmail.trim() || `${mobile}@students.shreeadslive.local`;
+        let authenticated = false;
+        if (studentEmail.trim()) {
+          const signIn = await supabase.auth.signInWithPassword({ email: authEmail, password: studentPassword });
+          authenticated = !signIn.error && Boolean(signIn.data.session);
+        } else {
+          try {
+            const result = await mobileSignIn({ data: { mobile, password: studentPassword } });
+            const { error } = await supabase.auth.setSession({ access_token: result.accessToken, refresh_token: result.refreshToken });
+            authenticated = !error;
+          } catch {
+            authenticated = false;
+          }
+        }
+        if (!authenticated) {
+          const signUp = await supabase.auth.signUp({
+            email: authEmail,
+            password: studentPassword,
+            options: { data: { full_name: studentName.trim(), mobile } },
+          });
+          if (signUp.error) throw new Error("That account already exists. Check your password and try again.");
+          if (!signUp.data.session) throw new Error("Your account was created, but sign-in confirmation is required before payment submission.");
+        }
+        activeSession = await readPortalSession();
+        if (!activeSession) throw new Error("Your account could not be loaded. Please sign in again.");
+        const { error: profileError } = await supabase.from("profiles").update({ full_name: studentName.trim(), mobile }).eq("id", activeSession.id);
+        if (profileError) throw profileError;
+      }
+      if (!activeSession) throw new Error("Please sign in before submitting payment.");
     const ext = proof.name.split(".").pop()?.toLowerCase() || "jpg";
-    const filePath = `${session.id}/${course.id}/${crypto.randomUUID()}.${ext}`;
+    const filePath = `${activeSession.id}/${course.id}/${crypto.randomUUID()}.${ext}`;
     const { error: uploadError } = await supabase.storage.from("payment-proofs").upload(filePath, proof, { contentType: proof.type, upsert: false });
-    if (uploadError) { setPaying(false); toast.error(uploadError.message); return; }
-    const { error } = await supabase.from("payment_requests").insert({ user_id: session.id, course_id: course.id, amount: course.price, utr_number: utr.trim(), screenshot_path: filePath });
-    setPaying(false);
-    if (error) { await supabase.storage.from("payment-proofs").remove([filePath]); toast.error(error.message.includes("one_pending") ? "A request for this course is already under review." : error.message); return; }
-    setSubmitted(true); toast.success("Payment request submitted for review.");
+      if (uploadError) throw uploadError;
+      const { error } = await supabase.from("payment_requests").insert({ user_id: activeSession.id, course_id: course.id, amount: course.price, utr_number: utr.trim(), screenshot_path: filePath });
+      if (error) {
+        await supabase.storage.from("payment-proofs").remove([filePath]);
+        throw new Error(error.message.includes("one_pending") ? "A request for this course is already under review." : error.message);
+      }
+      setSubmitted(true);
+      toast.success("Payment request submitted for review.");
+      window.open(createPaymentWhatsAppUri({
+        studentName: studentName.trim() || activeSession.fullName,
+        mobile: studentMobile || activeSession.mobile,
+        email: studentEmail || activeSession.email,
+        courseTitle: course.title,
+        amount: course.price,
+        utrNumber: utr.trim(),
+        status: "pending review",
+      }), "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not submit payment request.");
+    } finally {
+      setPaying(false);
+    }
   }
 
   if (loading || sessionLoading) return <div className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">Loading course…</div>;
@@ -442,20 +520,20 @@ export function CoursePage({ slug }: { slug: string }) {
   return <div className="portal-shell"><PortalHeader session={session} /><main>
     <div className="portal-container py-5"><Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="size-4" />Course library</Link></div>
     <section className="bg-panel text-panel-foreground"><div className="portal-container grid items-center gap-8 py-10 md:grid-cols-[1.05fr_0.95fr] md:py-14">
-      <div><p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-brand">SHREE ADS course</p><h1 className="max-w-2xl text-3xl font-bold leading-tight md:text-5xl">{course.title}</h1><p className="mt-5 max-w-xl leading-7 text-panel-foreground/75">{course.description || "A practical video course, ready to learn at your own pace."}</p><div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-panel-foreground/70"><span className="flex items-center gap-2"><CirclePlay className="size-4 text-brand" />On-demand lessons</span><span className="flex items-center gap-2"><BadgeCheck className="size-4 text-brand" />Individual course access</span></div><div className="mt-8 flex flex-wrap items-center gap-3"><strong className="mr-2 text-3xl">{formatRupees(course.price)}</strong>{!hasAccess && <a href="#enroll" className="inline-flex h-11 items-center gap-2 bg-brand px-5 text-sm font-semibold text-brand-foreground">Get course <ArrowRight className="size-4" /></a>}{hasAccess && <span className="inline-flex items-center gap-2 bg-panel-foreground/10 px-3 py-2 text-sm"><Check className="size-4 text-brand" />You have access</span>}<Button asChild variant="outline" className="h-11 rounded-none border-panel-foreground/30 bg-transparent text-panel-foreground hover:bg-panel-foreground/10"><a href={createCourseWhatsAppUri(course.title, course.price, session?.fullName)} target="_blank" rel="noreferrer">Ask about this course <MessageCircle /></a></Button></div></div>
+      <div><p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-brand">SHREE ADS course</p><h1 className="max-w-2xl text-3xl font-bold leading-tight md:text-5xl">{course.title}</h1><p className="mt-5 max-w-xl leading-7 text-panel-foreground/75">{course.description || "A practical video course, ready to learn at your own pace."}</p><div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-panel-foreground/70"><span className="flex items-center gap-2"><CirclePlay className="size-4 text-brand" />On-demand lessons</span><span className="flex items-center gap-2"><BadgeCheck className="size-4 text-brand" />Individual course access</span></div><div className="mt-8 flex flex-wrap items-center gap-3"><strong className="mr-2 text-3xl">{formatRupees(course.price)}</strong>{!hasAccess && <a href="#enroll" className="inline-flex h-11 items-center gap-2 bg-brand px-5 text-sm font-semibold text-brand-foreground">Get course <ArrowRight className="size-4" /></a>}{hasAccess && <span className="inline-flex items-center gap-2 bg-panel-foreground/10 px-3 py-2 text-sm"><Check className="size-4 text-brand" />You have access</span>}<Button asChild className="h-11 rounded-none bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"><a href="https://wa.me/919265106657" target="_blank" rel="noreferrer">WhatsApp us <MessageCircle /></a></Button></div></div>
       <div className="relative aspect-[1.55] overflow-hidden bg-secondary">{image ? <img src={image} alt="" className="h-full w-full object-cover" /> : <img src={studioImage} alt="" className="h-full w-full object-cover" />}<div className="absolute bottom-4 left-4 bg-background px-3 py-2 text-xs font-semibold text-foreground">A SHREE ADS learning experience</div></div>
     </div></section>
     <section className="portal-container grid gap-12 py-12 lg:grid-cols-[1fr_360px] lg:py-16">
       <div>{hasAccess ? <><div className="mb-6"><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand">Your lessons</p><h2 className="mt-2 text-2xl font-bold">Start watching</h2></div>{videos.length ? <div className="space-y-3">{videos.map((video, index) => <div key={video.id} className="border border-border bg-card">
         <div className="flex flex-wrap items-center justify-between gap-3 p-4"><div className="flex min-w-0 items-center gap-3"><span className="grid size-9 shrink-0 place-items-center bg-brand-soft text-brand">{String(index + 1).padStart(2, "0")}</span><div className="min-w-0"><h3 className="truncate font-semibold">{video.title}</h3><p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{video.description}</p></div></div><Button size="sm" variant="outline" className="rounded-none" onClick={async () => {
-          if (video.source_type === "youtube") { setActiveVideo(video.video_url); return; }
+          if (video.source_type === "youtube" || video.source_type === "direct") { setActiveVideo(video.video_url); return; }
           const { data } = await supabase.storage.from("course-videos").createSignedUrl(video.video_url, 60 * 60);
           if (!data?.signedUrl) toast.error("This video is temporarily unavailable."); else setActiveVideo(data.signedUrl);
         }}>Play lesson <Play /></Button></div>
       </div>)}</div> : <EmptyState title="Lessons are on the way" body="Your course access is active. Lesson videos will appear here when they are available." />}
-        {activeVideo && <div className="mt-5">{videos.find((item) => item.video_url === activeVideo)?.source_type === "youtube" ? <iframe key={activeVideo} src={toYouTubeEmbed(activeVideo)} title="Course video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className="aspect-video w-full bg-panel" /> : <video key={activeVideo} controls autoPlay className="aspect-video w-full bg-panel" src={activeVideo} onLoadedMetadata={(event) => { event.currentTarget.currentTime = 0; }} />}<Button type="button" variant="ghost" className="mt-2 rounded-none" onClick={() => setActiveVideo(null)}>Close player</Button></div>}
+        {activeVideo && <div className="mt-5">{videos.find((item) => item.video_url === activeVideo)?.source_type === "youtube" ? <iframe key={activeVideo} src={toYouTubeEmbed(activeVideo)} title="Course video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen className="aspect-video w-full bg-panel" /> : <video key={activeVideo} controls autoPlay playsInline className="aspect-video w-full bg-panel" src={videos.find((item) => item.video_url === activeVideo)?.source_type === "direct" ? toDirectVideoUrl(activeVideo) : activeVideo} onError={() => toast.error("This video is temporarily unavailable.")} onLoadedMetadata={(event) => { event.currentTarget.currentTime = 0; }} />}<Button type="button" variant="ghost" className="mt-2 rounded-none" onClick={() => setActiveVideo(null)}>Close player</Button></div>}
       </> : <><div className="mb-6"><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand">Inside the course</p><h2 className="mt-2 text-2xl font-bold">Learn one lesson at a time.</h2><p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">Lessons are streamed to students with approved access. Submit your payment details to start learning.</p></div><div className="grid gap-px border border-border bg-border sm:grid-cols-2">{[{ icon: CirclePlay, title: "Focused video lessons", body: "Watch a lesson, pause, and return when you need." }, { icon: BadgeCheck, title: "Private course access", body: "Only this approved course unlocks in your account." }, { icon: Clock3, title: "Learn on your schedule", body: "Access lessons when it suits you." }, { icon: ShieldCheck, title: "Review before access", body: "Your payment request is reviewed by SHREE ADS." }].map((item) => <div key={item.title} className="bg-background p-5"><item.icon className="size-5 text-brand" /><h3 className="mt-3 text-sm font-bold">{item.title}</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.body}</p></div>)}</div></>}</div>
-      {!hasAccess && <aside id="enroll" className="h-fit scroll-mt-6 border border-border bg-card p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand">Course enrollment</p><h2 className="mt-2 text-xl font-bold">Get started</h2>{submitted ? <div className="mt-5 space-y-4"><div className="flex gap-3 border border-border bg-secondary p-4"><Clock3 className="mt-0.5 size-5 shrink-0 text-brand" /><div><p className="font-semibold">Your payment request has been submitted.</p><p className="mt-1 text-sm leading-5 text-muted-foreground">Course access will be granted after Admin Approval.</p></div></div><div className="border border-border p-4 text-sm"><p className="font-semibold">Send your screenshot in WhatsApp</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Attach your payment screenshot manually in WhatsApp so the team can review it.</p><Button asChild className="mt-4 w-full rounded-none bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"><a target="_blank" rel="noreferrer" href={createPaymentWhatsAppUri({ studentName: session?.fullName ?? "", courseTitle: course.title, amount: course.price, utrNumber: utr.trim(), status: "pending review" })}>Continue to WhatsApp <MessageCircle /></a></Button></div><Link to="/student/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold underline underline-offset-4">Check payment status <ArrowRight className="size-4" /></Link></div> : <><div className="mt-4 flex items-end justify-between border-y border-border py-4"><div><span className="block text-xs text-muted-foreground">Course price</span><strong className="mt-1 block text-2xl">{formatRupees(course.price)}</strong></div><span className="text-xs text-muted-foreground">One-time</span></div><div className="my-5 flex items-center gap-4"><div className="border border-border bg-background p-2"><QRCodeSVG value={paymentUri} size={100} /></div><div className="min-w-0"><p className="text-sm font-bold">Pay by UPI</p><p className="mt-1 text-xs text-muted-foreground">Scan the QR or use a UPI app.</p><a href={paymentUri} className="mt-2 inline-flex text-xs font-bold text-brand">Open UPI app <ArrowRight className="ml-1 size-3.5" /></a><p className="mt-1 break-all text-[11px] text-muted-foreground">{PORTAL_UPI_ID}</p></div></div><form onSubmit={submitPayment} className="space-y-4 border-t border-border pt-4"><p className="text-sm font-bold">Submit payment proof</p>{!session && <div className="border border-border bg-secondary p-3 text-xs leading-5 text-muted-foreground">Sign in or create a student account before submitting payment proof.</div>}<div><Label className="portal-label" htmlFor="utr">UTR / transaction ID</Label><Input id="utr" required minLength={6} maxLength={80} value={utr} onChange={(event) => setUtr(event.target.value)} placeholder="Enter your transaction ID" className="h-10 rounded-none" /></div><div><Label className="portal-label" htmlFor="proof">Payment screenshot</Label><Input id="proof" required type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(event) => setProof(event.target.files?.[0] ?? null)} className="h-auto min-h-10 rounded-none px-2 py-2 text-xs" /><p className="mt-1 text-[11px] leading-4 text-muted-foreground">Private upload · image or PDF, up to 10 MB.</p></div><Button type="submit" disabled={paying} className="h-11 w-full rounded-none bg-brand text-brand-foreground hover:bg-brand/90">{paying ? "Submitting…" : session ? "Submit for review" : "Sign in to continue"}<ArrowRight /></Button><p className="text-[11px] leading-4 text-muted-foreground">Opening a UPI app or uploading a screenshot does not confirm payment. Access starts after review.</p></form></>}</aside>}
+      {!hasAccess && <aside id="enroll" className="h-fit scroll-mt-6 border border-border bg-card p-5 sm:p-6"><p className="text-xs font-bold uppercase tracking-[0.14em] text-brand">Course enrollment</p><h2 className="mt-2 text-xl font-bold">Get started</h2>{submitted ? <div className="mt-5 space-y-4"><div className="flex gap-3 border border-border bg-secondary p-4"><Clock3 className="mt-0.5 size-5 shrink-0 text-brand" /><div><p className="font-semibold">Your payment request has been submitted.</p><p className="mt-1 text-sm leading-5 text-muted-foreground">Course access will be granted after Admin Approval.</p></div></div><div className="border border-border p-4 text-sm"><p className="font-semibold">Send your screenshot in WhatsApp</p><p className="mt-1 text-xs leading-5 text-muted-foreground">Attach your payment screenshot manually in WhatsApp so the team can review it.</p><Button asChild className="mt-4 w-full rounded-none bg-whatsapp text-whatsapp-foreground hover:bg-whatsapp/90"><a target="_blank" rel="noreferrer" href={createPaymentWhatsAppUri({ studentName: studentName || session?.fullName || "", mobile: studentMobile || session?.mobile, email: studentEmail || session?.email, courseTitle: course.title, amount: course.price, utrNumber: utr.trim(), status: "pending review" })}>Continue to WhatsApp <MessageCircle /></a></Button></div><Link to="/student/dashboard" className="inline-flex items-center gap-2 text-sm font-semibold underline underline-offset-4">Check payment status <ArrowRight className="size-4" /></Link></div> : <><div className="mt-4 flex items-end justify-between border-y border-border py-4"><div><span className="block text-xs text-muted-foreground">Course price</span><strong className="mt-1 block text-2xl">{formatRupees(course.price)}</strong></div><span className="text-xs text-muted-foreground">One-time</span></div><div className="my-5 flex items-center gap-4"><div className="border border-border bg-background p-2"><QRCodeSVG value={paymentUri} size={100} /></div><div className="min-w-0"><p className="text-sm font-bold">Pay by UPI</p><p className="mt-1 text-xs text-muted-foreground">Scan the QR or use a UPI app.</p><a href={paymentUri} className="mt-2 inline-flex text-xs font-bold text-brand">Open UPI app <ArrowRight className="ml-1 size-3.5" /></a><p className="mt-1 break-all text-[11px] text-muted-foreground">{PORTAL_UPI_ID}</p></div></div><form onSubmit={submitPayment} className="space-y-4 border-t border-border pt-4"><p className="text-sm font-bold">Submit payment proof</p><div><Label className="portal-label" htmlFor="utr">UTR / transaction ID</Label><Input id="utr" required minLength={6} maxLength={80} value={utr} onChange={(event) => setUtr(event.target.value)} placeholder="Enter your transaction ID" className="h-10 rounded-none" /></div><div><Label className="portal-label" htmlFor="proof">Payment screenshot</Label><Input id="proof" required type="file" accept="image/png,image/jpeg,image/webp,application/pdf" onChange={(event) => setProof(event.target.files?.[0] ?? null)} className="h-auto min-h-10 rounded-none px-2 py-2 text-xs" /><p className="mt-1 text-[11px] leading-4 text-muted-foreground">Private upload · image or PDF, up to 10 MB.</p></div>{!session && <div className="space-y-4 border-t border-border pt-4"><p className="text-sm font-bold">Student account</p><div><Label className="portal-label" htmlFor="student-name">Full name</Label><Input id="student-name" required value={studentName} onChange={(event) => setStudentName(event.target.value)} placeholder="Your full name" className="h-10 rounded-none" /></div><div><Label className="portal-label" htmlFor="student-mobile">Mobile number</Label><Input id="student-mobile" required type="tel" value={studentMobile} onChange={(event) => setStudentMobile(event.target.value)} placeholder="+91 98765 43210" className="h-10 rounded-none" /></div><div><Label className="portal-label" htmlFor="student-email">Email <span className="font-normal text-muted-foreground">(optional)</span></Label><Input id="student-email" type="email" value={studentEmail} onChange={(event) => setStudentEmail(event.target.value)} placeholder="you@example.com" className="h-10 rounded-none" /></div><div><Label className="portal-label" htmlFor="student-password">Password</Label><Input id="student-password" required type="password" minLength={8} maxLength={128} value={studentPassword} onChange={(event) => setStudentPassword(event.target.value)} placeholder="At least 8 characters" className="h-10 rounded-none" /></div><p className="text-[11px] leading-4 text-muted-foreground">Already registered? Enter the same details and password to sign in securely.</p></div>}<Button type="submit" disabled={paying} className="h-11 w-full rounded-none bg-brand text-brand-foreground hover:bg-brand/90">{paying ? "Submitting…" : "Submit for review"}<ArrowRight /></Button><p className="text-[11px] leading-4 text-muted-foreground">Opening a UPI app or uploading a screenshot does not confirm payment. Access starts after review.</p></form></>}</aside>}
     </section>
   </main><SiteFooter /></div>;
 }

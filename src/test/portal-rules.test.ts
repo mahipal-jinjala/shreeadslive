@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dashboardForRole, normalizeMobile, validatePaymentProof } from "@/lib/portal-rules";
-import { toYouTubeEmbed } from "@/lib/video";
+import { detectVideoSource, toDirectVideoUrl, toYouTubeEmbed } from "@/lib/video";
 
 describe("Portal account and payment rules", () => {
   it("redirects admins to their protected dashboard", () => { expect(dashboardForRole("admin")).toBe("/admin/dashboard"); });
@@ -14,5 +14,10 @@ describe("Portal account and payment rules", () => {
   it("embeds valid YouTube videos and rejects unrelated hosts", () => {
     expect(toYouTubeEmbed("https://youtu.be/dQw4w9WgXcQ")).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
     expect(() => toYouTubeEmbed("https://evil.example/watch?v=dQw4w9WgXcQ")).toThrow();
+  });
+  it("detects and validates direct MP4 video URLs", () => {
+    expect(detectVideoSource("https://cdn.example.com/lesson.mp4?token=abc")).toBe("direct");
+    expect(toDirectVideoUrl("https://cdn.example.com/lesson.mp4?token=abc")).toBe("https://cdn.example.com/lesson.mp4?token=abc");
+    expect(() => toDirectVideoUrl("https://cdn.example.com/lesson.webm")).toThrow();
   });
 });

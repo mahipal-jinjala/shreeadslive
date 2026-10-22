@@ -1,5 +1,6 @@
 export const PORTAL_UPI_ID = "mahipaljinjala@oksbi";
 export const PORTAL_WHATSAPP_NUMBER = "919265106657";
+export const PORTAL_WHATSAPP_GREETING = "નમસ્તે, મેં તમારી જાહેરાત જોઈ છે. મારે Ads Setup કરવાનું શીખવું છે. કૃપા કરીને મને Ads Setup Training અને તેની ફી વિશે વધુ માહિતી આપશો.";
 
 export function createUpiPaymentUri(courseTitle: string, amount: number, reference: string): string {
   const params = new URLSearchParams({
@@ -23,8 +24,14 @@ export function createCourseWhatsAppUri(courseTitle: string, amount: number, stu
   return `https://wa.me/${PORTAL_WHATSAPP_NUMBER}?${new URLSearchParams({ text: details.join("\n") })}`;
 }
 
+export function createPortalWhatsAppUri(): string {
+  return `https://wa.me/${PORTAL_WHATSAPP_NUMBER}?${new URLSearchParams({ text: PORTAL_WHATSAPP_GREETING })}`;
+}
+
 export function createPaymentWhatsAppUri(details: {
   studentName: string;
+  mobile?: string;
+  email?: string;
   courseTitle: string;
   amount: number;
   utrNumber: string;
@@ -33,10 +40,12 @@ export function createPaymentWhatsAppUri(details: {
   const message = [
     "Hello SHREE ADS, I need help with my course payment.",
     `Student: ${details.studentName}`,
+    details.mobile ? `Mobile: ${details.mobile}` : null,
+    details.email ? `Email: ${details.email}` : null,
     `Course: ${details.courseTitle}`,
     `Amount: ₹${details.amount.toFixed(2)}`,
     `UTR: ${details.utrNumber}`,
     `Status: ${details.status}`,
-  ].join("\n");
+  ].filter((line): line is string => line !== null).join("\n");
   return `https://wa.me/${PORTAL_WHATSAPP_NUMBER}?${new URLSearchParams({ text: message })}`;
 }

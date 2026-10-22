@@ -5,3 +5,26 @@ export function toYouTubeEmbed(value: string): string {
   if (!id || !/^[A-Za-z0-9_-]{11}$/.test(id)) throw new Error("Enter a valid YouTube video URL.");
   return `https://www.youtube-nocookie.com/embed/${id}`;
 }
+
+export function toDirectVideoUrl(value: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("Enter a valid direct MP4 video URL.");
+  }
+  if (!["http:", "https:"].includes(url.protocol) || !url.pathname.toLowerCase().endsWith(".mp4")) {
+    throw new Error("Direct video URLs must use HTTP(S) and end with .mp4.");
+  }
+  return url.toString();
+}
+
+export function detectVideoSource(value: string): "youtube" | "direct" {
+  try {
+    toYouTubeEmbed(value);
+    return "youtube";
+  } catch {
+    toDirectVideoUrl(value);
+    return "direct";
+  }
+}
