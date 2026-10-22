@@ -22,7 +22,7 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
     }
 
     // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (isNewSupabaseApiKey(supabaseKey)) {
+    if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === 'Bearer ' + supabaseKey) {
       headers.delete('Authorization');
     }
 
@@ -61,7 +61,7 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     }
 
     if (!authHeader.startsWith('Bearer ')) {
-      throw new Error('Unauthorized: Only Bearer tokens are supported');
+      throw new Error('Unauthorized: Only bearer tokens are supported');
     }
 
     const token = authHeader.replace('Bearer ', '');
@@ -80,7 +80,7 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
         global: {
           fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY!),
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: 'Bearer ' + token,
           },
         },
         auth: {

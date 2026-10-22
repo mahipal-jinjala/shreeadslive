@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      portal_settings: {
+        Row: {
+          id: boolean
+          upi_id: string
+          whatsapp_number: string
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          upi_id?: string
+          whatsapp_number?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          upi_id?: string
+          whatsapp_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       course_access: {
         Row: {
           course_id: string

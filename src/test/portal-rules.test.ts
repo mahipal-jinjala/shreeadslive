@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 import { dashboardForRole, normalizeMobile, validatePaymentProof } from "@/lib/portal-rules";
 import { detectVideoSource, toDirectVideoUrl, toYouTubeEmbed } from "@/lib/video";
 
+function shouldStripPublishableAuthorization(authorization: string | null, publishableKey: string): boolean {
+  return authorization === "Bearer " + publishableKey;
+}
+
 describe("Portal account and payment rules", () => {
+  it("strips only publishable-key authorization, never a user session token", () => {
+    expect(shouldStripPublishableAuthorization("Bearer sb_publishable_test", "sb_publishable_test")).toBe(true);
+    expect(shouldStripPublishableAuthorization("Bearer user-access-token", "sb_publishable_test")).toBe(false);
+  });
   it("redirects admins to their protected dashboard", () => { expect(dashboardForRole("admin")).toBe("/admin/dashboard"); });
   it("redirects students to their learning dashboard", () => { expect(dashboardForRole("student")).toBe("/student/dashboard"); });
   it("matches Indian mobile numbers regardless of formatting", () => { expect(normalizeMobile("+91 98765 43210")).toBe("9876543210"); });
