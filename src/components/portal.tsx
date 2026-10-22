@@ -120,7 +120,7 @@ export function FloatingWhatsAppButton() {
     target="_blank"
     rel="noreferrer"
     aria-label="Chat with SHREE ADS on WhatsApp"
-    className="fixed bottom-4 left-4 z-50 inline-flex min-h-12 items-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-bold text-whatsapp-foreground shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-whatsapp focus-visible:ring-offset-2 sm:bottom-5 sm:left-5"
+    className="fixed bottom-4 right-4 z-50 inline-flex min-h-12 items-center gap-2 rounded-full bg-whatsapp px-4 py-3 text-sm font-bold text-whatsapp-foreground shadow-lg transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-whatsapp focus-visible:ring-offset-2 sm:bottom-5 sm:right-5"
   >
     <MessageCircle className="size-5" aria-hidden="true" />
     <span className="hidden sm:inline">WhatsApp us</span>
