@@ -132,6 +132,27 @@ export type Database = {
           },
         ]
       }
+      portal_settings: {
+        Row: {
+          id: boolean
+          updated_at: string
+          upi_id: string
+          whatsapp_number: string
+        }
+        Insert: {
+          id?: boolean
+          updated_at?: string
+          upi_id?: string
+          whatsapp_number?: string
+        }
+        Update: {
+          id?: boolean
+          updated_at?: string
+          upi_id?: string
+          whatsapp_number?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
