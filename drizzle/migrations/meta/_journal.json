@@ -29,6 +29,20 @@
       "when": 1792550468185,
       "tag": "0003_harden_portal_approval_and_storage",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792728025743,
+      "tag": "0004_create_portal_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792728062562,
+      "tag": "0005_revoke_trigger_function_execute",
+      "breakpoints": true
     }
   ]
 }

@@ -510,7 +510,6 @@ export function CoursePage({ slug }: { slug: string }) {
         utrNumber: utr.trim(),
         status: "pending review",
         whatsappNumber: settings.whatsapp_number,
-        whatsappNumber: settings.whatsapp_number,
       }), "_blank", "noopener,noreferrer");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not submit payment request.");
