@@ -32,8 +32,8 @@ export function createPortalWhatsAppUri(whatsappNumber = DEFAULT_PORTAL_WHATSAPP
 
 export function createPaymentWhatsAppUri(details: {
   studentName: string;
-  mobile?: string;
-  email?: string;
+  mobile?: string | undefined;
+  email?: string | undefined;
   courseTitle: string;
   amount: number;
   utrNumber: string;
