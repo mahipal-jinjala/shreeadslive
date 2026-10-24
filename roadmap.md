@@ -7,3 +7,4 @@
 - [ ] Test affected pages and full payment/review flows; report unverified or blocked items.
 - [x] Add course-specific and payment-record WhatsApp contact links with prefilled details.
 - [x] Show and verify real video upload percentage and estimated remaining time.
+- [x] Place and verify the player directly beneath its selected lesson (switching and closing checked; existing video playback not confirmed).
